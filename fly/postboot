@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd /var/www/discourse
+bundle exec rake themes:update assets:precompile
+sv restart unicorn

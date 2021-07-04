@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cp config/fly_web.template.yml templates/fly_web.template.yml
+cp config/fly_web_only.yml containers/fly_web_only.yml
+
+./launcher bootstrap fly_web_only

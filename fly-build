@@ -1,0 +1,9 @@
+#!/bin/sh
+
+docker build -t discourse-builder .
+docker run \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /var/lib/docker:/var/lib/docker \
+  -v $(PWD):/build -it --rm discourse-builder ./fly-bootstrap
+
+docker build -t fly-discourse -f fly/Dockerfile.boot .

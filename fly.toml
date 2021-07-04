@@ -1,0 +1,52 @@
+app = "mr-discourse"
+
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[build]
+  image = "fly-discourse"
+
+[deploy]
+  release_command = "fly/preboot"
+
+[env]
+  DISCOURSE_DB_USERNAME = "postgres"
+  # DISCOURSE_DB_PASSWORD = "set-in-secrets"
+  DISCOURSE_DB_HOST = "mr-discourse-db.internal"
+  DISCOURSE_REDIS_HOST = "mr-discourse-redis.internal"
+  DISCOURSE_SMTP_ADDRESS = "smtp.ohmysmtp.com"
+  DISCOURSE_HOSTNAME = "mr-discourse.souped-up.dev"
+  DISCOURSE_DB_NAME = "postgres"
+  DISCOURSE_SMTP_DOMAIN = "souped-up.dev"
+  # DISCOURSE_DEVELOPER_EMAILS = "set-in-secrets"
+  # DISCOURSE_SMTP_USER_NAME = "set-in-secrets"
+  # DISCOURSE_SMTP_PASSWORD = "set-in-secrets"
+
+[experimental]
+  allowed_public_ports = []
+  auto_rollback = true
+
+[[services]]
+  http_checks = []
+  internal_port = 80
+  protocol = "tcp"
+  script_checks = []
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 6
+    timeout = "2s"

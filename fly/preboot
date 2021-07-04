@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd /var/www/discourse
+bundle exec rake db:migrate
