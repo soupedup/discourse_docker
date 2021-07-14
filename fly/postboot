@@ -1,4 +1,0 @@
-#!/bin/sh
-
-cd /var/www/discourse
-su discourse -c 'bundle exec rake themes:update assets:precompile'

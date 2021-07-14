@@ -4,7 +4,7 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 
 # [deploy]
-#   release_command = "rails db:migrate"
+  release_command = "bin/rails db:migrate"
 
 [build.args]
   DISCOURSE_REDIS_HOST = "mr-discourse-redis.internal"
@@ -24,6 +24,7 @@ kill_timeout = 5
   # DISCOURSE_DEVELOPER_EMAILS = "set-in-secrets"
   # DISCOURSE_SMTP_USER_NAME = "set-in-secrets"
   # DISCOURSE_SMTP_PASSWORD = "set-in-secrets"
+  PRIMARY_REGION = "iad"
 
 [experimental]
   allowed_public_ports = []
