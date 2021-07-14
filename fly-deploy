@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+
+fly deploy --remote-only --dockerfile Dockerfile.fly-deploy --build-arg DISCOURSE_DB_PASSWORD=$MR_DISCOURSE_DB_PASSWORD

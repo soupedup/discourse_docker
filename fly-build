@@ -1,9 +1,23 @@
 #!/bin/sh
+#
+# Use Docker-in-Docker to run the standard Discourse bootstrap process, then push the resulting image
+# to the Fly repository for the final bootstrapping step: compiling assets in the production environment.
+#
+# See fly-bootstrap for details on that process.
+#
 
-docker build -t discourse-builder .
+# Build an image that can cleanly run the Discourse bootstrap process
+docker build -f Dockerfile.fly-builder -t discourse-builder .
+
+# Run the Discourse bootstrap with a config file suited for deployment on Fly.
+# This generates a new image named 'local_discourse/fly'.
 docker run \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/lib/docker:/var/lib/docker \
   -v $(PWD):/build -it --rm discourse-builder ./fly-bootstrap
 
-docker build -t fly-discourse -f fly/Dockerfile.boot .
+# Run the Discourse bootstrap with a config file suited for deployment on Fly
+docker build -t fly-discourse -f Dockerfile.fly-overlay .
+fly auth docker
+docker tag fly-discourse registry.fly.io/mr-discourse
+docker push registry.fly.io/mr-discourse:latest

@@ -3,11 +3,14 @@ app = "mr-discourse"
 kill_signal = "SIGINT"
 kill_timeout = 5
 
-[build]
-  image = "fly-discourse"
+# [deploy]
+#   release_command = "rails db:migrate"
 
-[deploy]
-  release_command = "fly/preboot"
+[build.args]
+  DISCOURSE_REDIS_HOST = "mr-discourse-redis.internal"
+  DISCOURSE_DB_HOST = "mr-discourse-db.internal"
+  DISCOURSE_DB_NAME = "postgres"
+  DISCOURSE_DB_USERNAME = "postgres"
 
 [env]
   DISCOURSE_DB_USERNAME = "postgres"

@@ -1,6 +1,5 @@
 #!/bin/sh
 
-cp config/fly_web.template.yml templates/fly_web.template.yml
-cp config/fly_web_only.yml containers/fly_web_only.yml
+cp fly/discourse_fly.yml containers/fly.yml
 
-./launcher bootstrap fly_web_only
+./launcher bootstrap fly

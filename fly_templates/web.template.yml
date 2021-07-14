@@ -140,6 +140,10 @@ run:
       cmd: echo "done configuring web"
       hook: web_config
 
+  # Allow overriding the current gem installation, and add the fly gem
+  - exec:
+      cmd: rm /var/www/discourse/.bundle/config && echo 'gem "fly-ruby"' >> /var/www/discourse/Gemfile
+
   - exec:
       cd: $home
       hook: web
@@ -152,24 +156,13 @@ run:
       cd: $home
       hook: bundle_exec
       cmd:
-        - su discourse -c 'bundle install --deployment --retry 3 --jobs 4 --verbose --without test development'
+        - su discourse -c 'bundle install --retry 3 --jobs 4 --verbose --without test development --path vendor/bundle'
 
   - exec:
       cd: $home
       cmd:
         - su discourse -c 'bundle exec rake plugin:pull_compatible_all'
       raise_on_fail: false
-
-  # - exec:
-  #     cd: $home
-  #     hook: db_migrate
-  #     cmd:
-  #       - su discourse -c 'bundle exec rake db:migrate'
-  # - exec:
-  #     cd: $home
-  #     hook: assets_precompile
-  #     cmd:
-  #       - su discourse -c 'bundle exec rake themes:update assets:precompile'
 
   - file:
      path: /usr/local/bin/discourse

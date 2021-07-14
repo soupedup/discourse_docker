@@ -1,4 +1,4 @@
-FROM local_discourse/fly_web_only
+FROM local_discourse/fly
 
 CMD /sbin/boot
 
