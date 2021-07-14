@@ -3,7 +3,7 @@ app = "mr-discourse"
 kill_signal = "SIGINT"
 kill_timeout = 5
 
-# [deploy]
+[deploy]
   release_command = "bin/rails db:migrate"
 
 [build.args]
