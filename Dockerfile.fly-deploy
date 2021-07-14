@@ -12,7 +12,8 @@ ENV DISCOURSE_DB_PASSWORD=${DISCOURSE_DB_PASSWORD}
 ARG DISCOURSE_DB_USERNAME
 ENV DISCOURSE_DB_USERNAME=${DISCOURSE_DB_USERNAME}
 
+WORKDIR /var/www/discourse
+
 RUN su discourse -c 'bundle exec rake themes:update assets:precompile'
 
-WORKDIR /var/www/discourse
 CMD /sbin/boot
