@@ -6,6 +6,10 @@ kill_timeout = 5
 [deploy]
   release_command = "bin/rails db:migrate"
 
+[metrics]
+  port = 80 # default for most prometheus clients
+  path = "/metrics" # default for most prometheus clients
+
 [build.args]
   DISCOURSE_REDIS_HOST = "mr-discourse-redis.internal"
   DISCOURSE_DB_HOST = "mr-discourse-db.internal"
