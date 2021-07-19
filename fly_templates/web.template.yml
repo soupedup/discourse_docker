@@ -1,24 +1,19 @@
 env:
   # You can have redis on a different box
-  RAILS_ENV: 'production'
-  UNICORN_WORKERS: 3
-  UNICORN_SIDEKIQS: 1
+  # RAILS_ENV: 'production'
+  # UNICORN_WORKERS: 3
+  # UNICORN_SIDEKIQS: 1
   # this gives us very good cache coverage, 96 -> 99
   # in practice it is 1-2% perf improvement
-  RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
+  # RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
   # stop heap doubling in size so aggressively, this conserves memory
-  RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 40000
-  RUBY_GC_HEAP_INIT_SLOTS: 400000
-  RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR: 1.5
-
-  DISCOURSE_DB_SOCKET: /var/run/postgresql
-  DISCOURSE_DB_HOST:
-  DISCOURSE_DB_PORT:
-
-
+  # RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 40000
+  # RUBY_GC_HEAP_INIT_SLOTS: 400000
+  # RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR: 1.5
+  # DISCOURSE_DB_SOCKET: /var/run/postgresql
 params:
-  version: tests-passed
-
+  version: main
+  repo: https://github.com/soupedup/discourse
   home: /var/www/discourse
   upload_size: 10m
 
@@ -86,9 +81,10 @@ run:
       cd: $home
       hook: code
       cmd:
+        - git remote set-url origin https://github.com/soupedup/discourse
         - git reset --hard
         - git clean -f
-        - git remote set-branches --add origin master
+        - git remote set-branches --add origin main
         - git remote set-branches origin $version
         - git fetch --depth 1 origin $version
         - git checkout $version
@@ -142,7 +138,15 @@ run:
 
   # Allow overriding the current gem installation, and add the fly gem
   - exec:
-      cmd: rm /var/www/discourse/.bundle/config && echo 'gem "fly-ruby"' >> /var/www/discourse/Gemfile
+      cmd: |
+        rm /var/www/discourse/.bundle/config
+        echo 'gem "fly-ruby", github: "superfly/fly-ruby"' >> /var/www/discourse/Gemfile
+        echo 'gem "scout_apm"' >> /var/www/discourse/Gemfile
+
+
+  - exec:
+      cmd: |
+        echo 'class Cache; def redis; DiscourseRedis.new({host: ENV["REDIS_CACHE_HOST"]}, namespace: true);end;end' >> /var/www/discourse/lib/cache.rb
 
   - exec:
       cd: $home
