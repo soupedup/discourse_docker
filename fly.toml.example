@@ -1,0 +1,69 @@
+app = "your_discourse"
+
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[deploy]
+  release_command = "bin/rails db:migrate"
+
+[build.args]
+  DISCOURSE_REDIS_HOST = "discourse-redis.internal"
+  DISCOURSE_DB_HOST = "discourse-db.internal"
+  DISCOURSE_DB_NAME = "postgres"
+  DISCOURSE_DB_USERNAME = "postgres"
+
+  # Optionally set this if you have a separate, per-region Rails cache Redis instance
+  # REDIS_CACHE_HOST = "discourse-redis-cache.internal"
+[env]
+  DISCOURSE_DB_USERNAME = "postgres"
+  DISCOURSE_DB_HOST = "discourse-db.internal"
+  DISCOURSE_REDIS_HOST = "discourse-redis.internal"
+  DISCOURSE_SMTP_ADDRESS = "smtp.ohmysmtp.com"
+  DISCOURSE_HOSTNAME = "your_discourse.yourdomain.dev"
+  DISCOURSE_DB_NAME = "postgres"
+  DISCOURSE_SMTP_DOMAIN = "yourdomain.dev"
+
+  # Set these values in Fly secrets
+  # DISCOURSE_DB_PASSWORD = "set-in-secrets"
+  # DATABASE_URL = "full-db-connection-string"
+  # Comma-separated list of email addresses
+  # DISCOURSE_DEVELOPER_EMAILS = "set-in-secrets"
+  # DISCOURSE_SMTP_USER_NAME = "set-in-secrets"
+  # DISCOURSE_SMTP_PASSWORD = "set-in-secrets"
+  # Generate a safe secret with `rails secret`
+  # DISCOURSE_SECRET_KEY_BASE = "set-in-secrets"
+
+  # Optionally set this if you have a separate, per-region Rails cache Redis instance
+  # REDIS_CACHE_HOST = "mr-discourse-redis.internal"
+  
+  # Optionally set this if using per-region Postgresql replicas for reads
+  # PRIMARY_REGION = "iad"
+
+[experimental]
+  allowed_public_ports = []
+  auto_rollback = true
+
+[[services]]
+  http_checks = []
+  internal_port = 80
+  protocol = "tcp"
+  script_checks = []
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 6
+    timeout = "2s"
