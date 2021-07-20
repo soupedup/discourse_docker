@@ -6,10 +6,6 @@ kill_timeout = 5
 [deploy]
   release_command = "bin/rails db:migrate"
 
-[metrics]
-  port = 80 # default for most prometheus clients
-  path = "/metrics" # default for most prometheus clients
-
 [build.args]
   DISCOURSE_REDIS_HOST = "iad.mr-discourse-redis.internal"
   REDIS_CACHE_HOST = "mr-discourse-redis.internal"
@@ -19,7 +15,6 @@ kill_timeout = 5
 
 [env]
   DISCOURSE_DB_USERNAME = "postgres"
-  # DISCOURSE_DB_PASSWORD = "set-in-secrets"
   DISCOURSE_DB_HOST = "iad.mr-discourse-db.internal"
   DISCOURSE_REDIS_HOST = "iad.mr-discourse-redis.internal"
   DISCOURSE_SMTP_ADDRESS = "smtp.ohmysmtp.com"
@@ -27,11 +22,11 @@ kill_timeout = 5
   DISCOURSE_DB_NAME = "postgres"
   DISCOURSE_SMTP_DOMAIN = "souped-up.dev"
   REDIS_CACHE_HOST = "mr-discourse-redis.internal"
+  PRIMARY_REGION = "iad"
+  # DISCOURSE_DB_PASSWORD = "set-in-secrets"
   # DISCOURSE_DEVELOPER_EMAILS = "set-in-secrets"
   # DISCOURSE_SMTP_USER_NAME = "set-in-secrets"
   # DISCOURSE_SMTP_PASSWORD = "set-in-secrets"
-  PRIMARY_REGION = "iad"
-  UNICORN_SIDEKIQS = "0"
 
 [experimental]
   allowed_public_ports = []
