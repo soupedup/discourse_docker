@@ -6,18 +6,25 @@
 # See fly-bootstrap for details on that process.
 #
 
+set -ex
+
 BUILD_ID=$1
 # Build an image that can cleanly run the Discourse bootstrap process
 docker build -f Dockerfile.fly-builder -t discourse-builder .
 
 # Run the Discourse bootstrap with a config file suited for deployment on Fly.
 # This generates a new image named 'local_discourse/fly'.
+
+echo "Bootstrapping build $BUILD_ID..."
 docker run \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/lib/docker:/var/lib/docker \
   -v $(PWD):/build -it --rm discourse-builder ./fly-bootstrap
 
 # Tag the generated Docker image and push to the Fly registry
+
+echo "Authenticating to the Fly docker repo..."
 fly auth docker
 docker tag local_discourse/fly registry.fly.io/mr-discourse:$BUILD_ID
+echo "Pushing build $BUILD_ID..."
 docker push registry.fly.io/mr-discourse:$BUILD_ID

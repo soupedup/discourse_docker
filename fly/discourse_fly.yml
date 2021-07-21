@@ -9,7 +9,7 @@ expose:
 
 params:
   # Which Git revision should this container use? (default: tests-passed)
-  version: tests-passed
+  version: main
 
 env:
   LC_ALL: en_US.UTF-8
@@ -25,7 +25,7 @@ env:
   # REQUIRED
   # The domain name this Discourse instance will respond to.
 
-  DISCOURSE_HOSTNAME: 'mr-discourse.souped-up.dev'
+  # DISCOURSE_HOSTNAME: 'mr-discourse.souped-up.dev'
 
   # REQUIRED
   # List of comma delimited emails that will be made admin and developer on initial signup

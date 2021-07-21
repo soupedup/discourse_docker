@@ -4,7 +4,11 @@ set -e
 
 BUILD_ID=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 13)
 
+echo "Building fly-discourse with ID $BUILD_ID..."
 ./fly-build $BUILD_ID
+
+echo "Deploying $BUILD_ID..."
 fly deploy --remote-only --dockerfile Dockerfile.fly-deploy \
   --build-arg DISCOURSE_DB_PASSWORD=$DISCOURSE_DB_PASSWORD \
-  --build-arg BUILD_ID=$BUILD_ID
+  --build-arg BUILD_ID=$BUILD_ID \ 
+  --build-arg DATABASE_URL=$DISCOURSE_DATABASE_URL
