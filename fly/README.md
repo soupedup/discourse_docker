@@ -2,21 +2,23 @@ This repo is a clone of [Discourse docker](https://github.com/discourse/discours
 
 ## Running Discourse on Fly.io
 
-Discourse is a curious player in the open source application space. True, at its core it's a 10+ year old, battle-tested Rails app. But its only supported container-based deployment strategy bundles Sidekiq, Nginx, Postgresql, and even a [custom websocket-based message bus]() into a single image, designed to run on a single server.
+Discourse is a curious player in the open source application space. True, at its core it's a 10+ year old, battle-tested Rails app. But its only supported container-based deployment strategy bundles Sidekiq, Nginx, Redis, Postgresql, and even a [custom websocket-based message bus](https://github.com/discourse/message_bus) into a single image, designed to run on a single server.
 
-This approach cleverly allows potential Discourse deployers to defer to the systems knowledge of the Discourse maintainers. But it poses a challenge for running it as a standard, [12-factor]() Rails app. You might want to do this to scale a large installation, get peace of mind from hosted databases, or because you think it's the right way to deploy these days.
+While this approach is dead simple for simple installations, it's a challenge to extract these services and run Discourse as a [12-factor](https://12factor.net/) web application. You might want to do this to scale a large installation, get peace of mind from managed database services, or simply because you think it's the right way to deploy these days.
 
-On Fly, another reason to split out databases is to take advantage of region-local [Postgresql]() and [Redis] instances() to improve perceived application performance. We cover the experiments we ran to attempt this [later in this document]().
+On Fly, another reason to do this is to take advantage of globally distributed [Postgresql](https://fly.io/blog/globally-distributed-postgres/) and [Redis](https://fly.io/blog/last-mile-redis/) instances to improve perceived application performance. We cover the experiments we ran to attempt this [later in this document](#multiple-region-deployment).
 
 In this repo, we try to keep changes to the supported build minimal so we may continue to merge upstream changes.
 
 ### Building a deployable image
 
-If you just want to try a deployment, [skip here]().
+If you just want to try a deployment, [skip here for single region deployment instructions](#single-region-deployment).
 
 #### Changes for deployment on Fly
 
-Discourse provides their [launcher script]() and some [sample templates]() for generating a deployable Docker image. Roughly, the script will:
+Discourse provides their [launcher script](https://github.com/discourse/discourse_docker/blob/master/launcher) and some [sample configuration templates](https://github.com/discourse/discourse_docker/blob/master/samples) for generating a deployable Docker image. 
+
+Roughly, the script will:
 
 * Grab the [discourse base image](https://hub.docker.com/r/discourse/base)
 * Clone the current discourse repository in a temporary container
@@ -29,39 +31,45 @@ We stick to this approach, but with a few changes:
 
 We allow fetching our own fork of Discourse, for testing experimental changes like region-local datbaase support.
 
-We inject Ruby gems we want installed in the final image, such as [fly-ruby]() or [scout_apm]().
+We inject Ruby gems we want installed in the final image, such as [fly-ruby](https://github.com/superfly/fly-ruby) or [scout_apm](https://github.com/scoutapp/scout_apm_ruby/).
 
 We skip the configuration validation phase, since we will be applying configuration options through the container environment, converted into application config by Discourse's [EnvProvider](https://github.com/discourse/discourse/blob/main/app/models/global_setting.rb#L323). This could be improved so validation takes place, and then applies the necessary configuration using `flyctl`.
 
 Because Rails asset precompilation needs access to the production databases, we split deployment into a few steps.
 
-1. We run `launcher bootstrap` inside an ephemeral Docker build. This allows any machine to build a new base image, sans precompiled assets.
+1. We run `launcher bootstrap web` inside an ephemeral Docker build. This allows any machine to build a new base image, sans precompiled assets.
 
-2. This base image is pushed to Fly so the final deployment may bake in Rails assets with the production environment intact. Currently, this requires passing `DISCOURSE_DB_PASSWORD` as a [build argument]().
+2. This base image is pushed to Fly.
+
+3. Finally, we build upon this image on a Fly remote builder. The builder VM has access to the production environment, os it may compile Rails assets. Currently, this requires passing `DISCOURSE_DB_PASSWORD` as a build argument.
 
 ### Single region deployment
 
-Pick a region and ensure you have setup a [Redis] and [Postgresql] instance there. Here we've chosen `iad`.
+Pick a region and ensure you have setup a [Redis](https://github.com/fly-apps/redis-geo-cache) and [Postgresql](https://github.com/fly-apps/postgres-ha) instance there. Here we've chosen `iad`.
 
-See `fly.toml.example` for available configuration options, and copy it to `fly.toml`. Create a Fly application and update `app`. All environment variables - and secrets - should also be set before deployment.
+See `fly.toml.example` for available configuration options, and copy it to `fly.toml`. Create a Fly application and update `app` accordingly. All environment variables in `fly.toml` - and secrets mentioned therein - should be set before deployment.
 
-Setup an SMTP gateway somewhere. This appears to be required, since you need to get emails to be able to setup the forum initially. https://www.smtp2go.com appears to allow free trials. https://www.ohmysmtp.com is a good paid service.
+Setup an SMTP gateway somewhere. This appears to be required, since email verification is required to setup Discourse. https://www.smtp2go.com appears to allow free trials. https://www.ohmysmtp.com is a good paid service.
 
 Run `DISCOURSE_DB_PASSWORD=your_pg_password ./fly-build` on any machine with Docker.
 
-A successful build should result in a new Docker image named `fly-discourse` which will be pushed to Fly's internal Docker repository. Then, the final deployment will take place on your Fly remote builder instance.
+A successful build pushes the `fly-discourse` image to Fly's internal Docker repository. The actual deployment runs through your Fly remote builder.
 
-Finally, you should visit your app and setup Discourse.
+Finally: visit your app and setup Discourse.
 
-### Multi-region deployment
+### Multiple region deployment
 
-Fly's [multiregion features]() combined with the `fly-ruby`() could make Discourse appear faster to regions far away from the primary one. Reads from Postgresql and Redis could be run against region-local replicas, and caches could be colocated with applications. Requests that write can be [replayed in the primary region]().
+Our goal here is to scale Discourse to run in multiple regions, without losing performance. Ideally, we can improve it!
 
-Alas, scaling Discourse this way is tricky! Almost every request performs writes to both Postgresql and Redis. Here, we'll cover our ongoing attempts to make this work in our [fork of Discourse]().
+Reads from Postgresql and Redis can use regional replicas, and caches (redis, nginx, static files) could be colocated with applications, closer to their targets. The [fly-ruby](https://github.com/superfly/fly-ruby) gem can help us get there.
 
-First, here's some unscientific but revealing numbers from hitting a fresh installation from around the world:
+Alas, scaling Discourse this way is tricky! Almost every request performs writes to both Postgresql and Redis. Here, we'll cover our ongoing attempts to make this work in our [fork of Discourse](https://github.com/souped-up/discourse).
+
+First, here's some unscientific but revealing numbers from hitting the app root from around the world:
 
 ```
+$ fly curl https://mr-discourse.souped-up.dev
+
 Region	Status	DNS	Connect	TLS	TTFB	Total
 atl	200	57.8ms	58.5ms	167.8ms	315.1ms	317.8ms
 iad	200	73.7ms	73.9ms	169.4ms	362.3ms	363.2ms
@@ -76,7 +84,7 @@ nrt	200	140.9ms	141.5ms	329.6ms	524.6ms	526.8ms
 syd	200	443.8ms	444.9ms	942.3ms	991.6ms	994.5ms
 ```
 
-Our goal here is to improve the TTFB (Time-To-First-Byte) values in non-primary regions.
+Our goal here is to improve the TTFB (Time-To-First-Byte) values in regions other than `iad`.
 
 #### Regional Postgres
 
@@ -157,7 +165,10 @@ Note: previously we set the `DISCOURSE_SECRET_KEY_BASE` secret to avoid Discours
 
 Now we have a replica in place, we need to tell Discourse to use it for Rails cache. This is not automated yet by `fly-ruby`, so we do some [monkeypatching]() to make it work in Discourse.
 
-Finally, we want Discourse to read from our regional replica and write to the primary. To avoid blocking writes, we use the [Defer]() class mentioned above to move the Redis writes to a background thread. This will backfire in situations where reads are dependent on a write in the same request - but here we are!
+Finally, we want Discourse to read from our regional replica and write to the primary. To avoid blocking writes, we use the [Defer]() class mentioned above to move the Redis writes to a background thread. And we perform all
+other Redis reads against the regional replica. This is simplified by [modifying Discourse's Redis client proxy]().
+
+This will backfire in situations where reads are dependent on a write in the same request - but here we are!
 
 The numbers we're getting now:
 
